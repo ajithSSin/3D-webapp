@@ -1,44 +1,45 @@
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment, useGLTF } from "@react-three/drei";
 
-// Loader component using pure Tailwind CSS
+// Loader
 function Loader() {
   return (
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
-                    flex flex-col items-center text-white font-sans">
-      <div
-        className="w-12 h-12 border-[6px] border-white/20 border-t-white 
-                   rounded-full animate-spin"
-      />
-      <p className="mt-3 text-sm tracking-wide text-gray-200">
-        Loading 3D model...
-      </p>
-      
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white">
+      <div className="w-12 h-12 border-4 border-gray-400 border-t-blue-500 rounded-full animate-spin" />
+      <p className="mt-3 text-sm text-gray-300">Loading 3D model...</p>
     </div>
   );
 }
 
-// 3D model loader
+// Model loader
 function Model({ url }) {
   const { scene } = useGLTF(url);
-  return <primitive object={scene} scale={1.5} />;
+  return <primitive object={scene} scale={1.2} />;
 }
 
-// Main Model Viewer
 export default function ModelViewer({ filename }) {
-  const fileUrl = `http://localhost:5000/download/${filename}`;
+  const [fileUrl, setFileUrl] = useState(null);
+
+  useEffect(() => {
+    if (filename) {
+      setFileUrl(`/download/${filename}`);
+    }
+  }, [filename]);
+
+  if (!fileUrl) {
+    return <div className="text-center text-gray-400">Select a model to view.</div>;
+  }
 
   return (
-    <div className="w-80 h-80 relative bg-gray-900 
-                    flex items-center justify-center rounded-xl shadow-lg overflow-hidden">
+    <div className="relative w-full h-[500px] bg-gray-500 rounded-xl shadow-lg overflow-hidden">
       <Suspense fallback={<Loader />}>
-        <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
-          <ambientLight intensity={0.8} />
-          <directionalLight position={[5, 5, 5]} />
+        <Canvas camera={{ position: [0, 1, 6], fov: 50 }}>
+          <ambientLight intensity={0.6} />
+          <directionalLight position={[5, 5, 5]} intensity={1.2} />
           <Model url={fileUrl} />
           <Environment preset="city" />
-          <OrbitControls enableZoom={true} />
+          <OrbitControls enableZoom enablePan />
         </Canvas>
       </Suspense>
     </div>

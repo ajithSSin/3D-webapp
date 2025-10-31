@@ -2,8 +2,6 @@ import React from 'react'
 // import Dashboard from '../components/Dashboard'
 import UploadForm from '../components/UploadForm'
 import Navbar from '../components/Navbar'
-import FrontEnd from '../components/FrontEnd'
-// Navbar
 
 const Admin = () => {
   return (

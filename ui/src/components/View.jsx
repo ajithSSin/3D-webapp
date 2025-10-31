@@ -1,59 +1,59 @@
-import React from 'react'
-import { useState, useEffect } from 'react';
-import ModelViewer from './ModelViewer';
-import Navbar from './Navbar';
+import React, { useEffect, useState } from "react";
+import Navbar from "./Navbar";
+import ModelViewer from "./ModelViewer";
+import UploadForm from "./UploadForm";
 
-const View = () => {
-
+export default function View() {
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
 
-  // Fetch file list from backend
+  const fetchFiles = async () => {
+    try {
+      const res = await fetch("/list");
+      const data = await res.json();
+      setFiles(data);
+    } catch (error) {
+      console.error("Error fetching file list:", error);
+    }
+  };
+
   useEffect(() => {
-    const fetchFiles = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/list");
-        const data = await res.json();
-        setFiles(data);
-      } catch (err) {
-        console.error("Error fetching file list:", err);
-      }
-    };
     fetchFiles();
   }, []);
 
   return (
-    // <div>View</div>
     <>
-    <Navbar/>
-    <div style={{ textAlign: "center", padding: "2rem" }}>
-      <h1>3D Model Dashboard</h1>
+      <Navbar />
+      <div className="p-10 text-center">
+        {/* Upload section */}
+        {/* <UploadForm onUploadSuccess={fetchFiles} /> */}
 
-      {/* List of Uploaded Models */}
-      <div className="flex flex-wrap justify-center gap-4 mb-8">
+        <h2 className="text-2xl mb-6 font-semibold">Available 3D Models</h2>
 
-        {files.length > 0 ? (files.map((file) => (
-            <div
-              key={file._id}
-              onClick={() => setSelectedFile(file.filename)}
-              
-              className={`px-6 py-4 border border-gray-300 rounded-lg 
-                  cursor-pointer transition-all duration-200 ease-in-out
-                  ${selectedFile === file.filename? "bg-blue-500 text-white"
-                                                  : "bg-gray-100 text-gray-800"}`}>
-              {file.filename}
-            </div>
-          ))
-        ) : (<p>No files uploaded yet.</p>)}
+        {/* File list */}
+        <div className="flex flex-wrap justify-center gap-4 mb-8">
+          {files.length > 0 ? (
+            files.map((file) => (
+              <button
+                key={file._id}
+                onClick={() => setSelectedFile(file.filename)}
+                className={`px-5 py-2 rounded-lg border transition-all duration-200 ${
+                  selectedFile === file.filename
+                    ? "bg-blue-600 border-blue-600"
+                    : "bg-gray-800 border-gray-600 hover:bg-gray-700"
+                }`}
+              >
+                {file.filename}
+              </button>
+            ))
+          ) : (
+            <p className="text-gray-400">No files uploaded yet.</p>
+          )}
+        </div>
+
+        {/* 3D Model Viewer */}
+        <ModelViewer filename={selectedFile} />
       </div>
-
-      {/* 3D Model Viewer */}
-      <div className="w-80 h-80">
-        {selectedFile && <ModelViewer filename={selectedFile} />}
-      </div>
-    </div>
     </>
-  )
+  );
 }
-
-export default View

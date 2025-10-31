@@ -17,15 +17,14 @@ const db = client.db();
 const bucket = new GridFSBucket(db, { bucketName: "models" });
 
 /**
- * @route POST /api/upload
+ * @route POST /upload
  * @desc Upload a .glb file to MongoDB GridFS
  */
+
 router.post("/upload", upload.single("model"), async (req, res) => {
-    // console.log("in route");
-    
   try {
-    const { filename, path } = req.file;
-    const uploadStream = bucket.openUploadStream(filename, {
+    const { originalname, path } = req.file;
+    const uploadStream = bucket.openUploadStream(originalname, {
       contentType: "model/gltf-binary",
     });
 
@@ -36,9 +35,9 @@ router.post("/upload", upload.single("model"), async (req, res) => {
         res.status(500).json({ message: "Error uploading file" });
       })
       .on("finish", () => {
-        fs.unlinkSync(path); // delete temp file
+        fs.unlinkSync(path);
         res.status(200).json({
-          message: "File uploaded to MongoDB GridFS",
+          message: "File uploaded successfully",
           fileId: uploadStream.id,
         });
       });
@@ -68,18 +67,39 @@ router.get("/list", async (req, res) => {
 });
 
 /**
- * @route GET /api/download/:filename
+ * @route GET /download/:filename
  * @desc Download a .glb file from MongoDB GridFS
  */
-router.get("/download/:filename", async (req, res) => {
 
+// router.get("/download/:filename", async (req, res) => {
+
+//   try {
+//     const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
+//     res.set("Content-Type", "model/gltf-binary");
+//     downloadStream.pipe(res);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(404).json({ message: "File not found" });
+//   }
+// });
+
+router.get("/download/:filename", async (req, res) => {
   try {
+    const files = await db.collection("models.files").findOne({ filename: req.params.filename });
+    if (!files) return res.status(404).json({ message: "File not found" });
+
+    res.set({
+      "Content-Type": "model/gltf-binary",
+      "Content-Disposition": `inline; filename="${req.params.filename}"`,
+      "Cross-Origin-Resource-Policy": "cross-origin",
+    });
+
     const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
-    res.set("Content-Type", "model/gltf-binary");
+    downloadStream.on("error", () => res.status(404).json({ message: "File not found" }));
     downloadStream.pipe(res);
   } catch (err) {
     console.error(err);
-    res.status(404).json({ message: "File not found" });
+    res.status(500).json({ message: "Error downloading file" });
   }
 });
 

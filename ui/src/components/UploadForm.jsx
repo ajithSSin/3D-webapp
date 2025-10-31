@@ -1,64 +1,85 @@
-import React, { useState } from 'react'
+import React, { useState } from "react";
 
-const UploadForm = () => {
+export default function UploadForm({ onUploadSuccess }) {
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState("");
 
-    const [file, setFile]=useState(null);
+  const handleFileChange = (e) => {
+    const selected = e.target.files[0];
+    if (selected && selected.name.endsWith(".glb")) {
+      setFile(selected);
+      setMessage("");
+    } else {
+      setMessage("Please select a valid .glb file");
+      setFile(null);
+    }
+  };
 
-    const handleUpload = async(e)=>{
-        e.preventDefault();
-        if(!file){
-            return(alert("Select (.glb) file"))
-        }
-        const formData=new FormData();
-        formData.append("model",file);
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!file) return alert("Select a .glb file first!");
 
-        try{
-            const res= await fetch("http://localhost:5000/upload",{
-                method:"POST",
-                body:formData,               
-            });
-            try {
-                  const data= await res.json();
-            if(!res.ok){
-                throw new Error(data.message||"Error in uploading")
-                //throw new Error("Error in uploading")
-            }            
-            alert(data.message);                
-            } catch (error) {
-                console.log(data.message);
-                console.log(error); 
-            }
-          
-        }catch(error){
-            console.error(error);
-            alert(" Error")           
-        }
-    };
+    const formData = new FormData();
+    formData.append("model", file);
+
+    try {
+      setUploading(true);
+      setMessage("Uploading...");
+
+      const res = await fetch("/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setMessage("File upload successfully!");
+        setFile(null);
+        e.target.reset();
+
+        // Refresh the model list after upload
+        if (onUploadSuccess) onUploadSuccess();
+      } else {
+        setMessage(`Upload failed: ${data.message}`);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      setMessage("Error uploading file");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
-    // <div>UploadForm</div>
-    <div>
-        <form onSubmit={handleUpload}
-            className='flex flex-col items-center justify-center
-                        bg-gray-400 p-6 rounded-xl shadow-md w-150'>
-            <h1 className="text-3xl font-bold text-gray-800 mb-4">
-                    3D Model Uploader
-            </h1>                
-            <label className='text-lg font-semibold mb-1'>
-                                Upload 3d Model(.glb files)
-            </label> 
-            <input type="file" 
-                    accept='.glb'
-                    className=''
-                     onChange = {(e) => {if(e.target.files && e.target.files[0]){
-                        setFile(e.target.files[0])}}} />
-            <button className='bg-blue-600 text-white py-2 px-4 mt-4
-                                rounded-lg hover:bg-blue-500'>
-                Upload
-            </button>
-        </form>
-    </div>
-  )
-}
+    <div className="bg-gray-500 p-6 rounded-xl shadow-lg text-center mb-8">
+      <h2 className="text-xl font-semibold mb-4">Upload a 3D Model (.glb)</h2>
 
-export default UploadForm
+      <form onSubmit={handleUpload} className="flex flex-col items-center gap-3">
+        <input
+          type="file"
+          accept=".glb"
+          onChange={handleFileChange}
+          className="text-gray-300 file:mr-3 file:py-2 file:px-4 
+                     file:rounded-lg file:border-0 file:bg-green-600 
+                     file:text-white hover:file:bg-green-500"
+        />
+
+        <button
+          type="submit"
+          disabled={uploading}
+          className={`px-6 py-2 rounded-lg font-medium transition 
+            ${uploading
+              ? "bg-gray-600 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-500"
+            }`}
+        >
+          {uploading ? "Uploading..." : "Upload"}
+        </button>
+      </form>
+
+      {message && <p className="mt-4 text-sm text-gray-300">{message}</p>}
+    </div>
+  );
+}
